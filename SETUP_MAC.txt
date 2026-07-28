@@ -1,0 +1,277 @@
+================================================================================
+  TherapyConnect — Mac Setup Guide
+  (ZIP folder share — no GitHub, no dev tools installed)
+================================================================================
+
+You received a ZIP file of this project. Follow every step in order.
+Estimated time: 30–45 minutes on a fresh Mac.
+
+
+WHAT YOU WILL INSTALL
+---------------------
+  1. Homebrew    — installs other tools easily
+  2. Node.js     — runs the website and API
+  3. MongoDB     — stores all data (therapists, bookings, users)
+  4. (Optional)  VS Code — code editor
+
+
+================================================================================
+PART 1 — INSTALL REQUIRED TOOLS (one-time setup)
+================================================================================
+
+STEP 1: Open Terminal
+---------------------
+  • Press Cmd + Space, type "Terminal", press Enter
+  • A window with a command prompt will open — all commands below go here
+
+
+STEP 2: Install Homebrew
+------------------------
+Copy and paste this entire line, then press Enter:
+
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  • Enter your Mac password when asked (you won't see characters — that's normal)
+  • Wait until it finishes (may take 5–10 minutes)
+
+When done, the installer may show two lines to run. On most Macs (Apple Silicon), run:
+
+  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+
+On older Intel Macs, it might say /usr/local instead of /opt/homebrew.
+
+Check it worked:
+
+  brew --version
+
+
+STEP 3: Install Node.js
+------------------------
+  brew install node
+
+Check:
+
+  node -v
+  npm -v
+
+You should see version numbers (Node v18 or higher).
+
+
+STEP 4: Install MongoDB
+-----------------------
+  brew tap mongodb/brew
+  brew install mongodb-community@7.0
+  brew services start mongodb-community@7.0
+
+Check MongoDB is running:
+
+  brew services list
+
+Look for mongodb-community — status should say "started".
+
+
+================================================================================
+PART 2 — SET UP THE PROJECT FROM THE ZIP FILE
+================================================================================
+
+STEP 5: Unzip the project
+-------------------------
+  1. Find the ZIP file you received (e.g. therapist-project.zip)
+  2. Double-click it to unzip
+  3. You should get a folder named "therapist-project"
+  4. Move it somewhere easy to find, e.g. Documents:
+       ~/Documents/therapist-project
+
+  Do NOT rename the inner folders (client, server, shared must stay as they are).
+
+
+STEP 6: Go to the project folder in Terminal
+--------------------------------------------
+Replace the path below if you put the folder somewhere else:
+
+  cd ~/Documents/therapist-project
+
+Check you're in the right place — you should see client, server, shared:
+
+  ls
+
+You should see: client  server  shared  package.json  docker-compose.yml  etc.
+
+
+STEP 7: Install project packages
+--------------------------------
+Still inside therapist-project, run:
+
+  npm install
+
+Wait until it finishes (first time: 2–5 minutes). No errors at the end = success.
+
+
+STEP 8: Create the environment file
+-----------------------------------
+  cp server/.env.example server/.env
+
+You don't need to edit this file for local development — defaults are fine.
+
+
+STEP 9: Load sample data into the database
+------------------------------------------
+Make sure MongoDB is still running (Step 4), then:
+
+  npm run seed
+
+You should see:
+
+  Seed completed!
+  Admin: admin@therapistdirectory.com / Admin123!
+  Client: client@example.com / Client123!
+  Therapists: *@example.com / Therapist123!
+
+
+STEP 10: Start the application
+------------------------------
+  npm run dev
+
+Leave this Terminal window OPEN while using the app.
+
+When ready, you'll see lines like:
+  • Local: http://localhost:5173/     (website)
+  • Server running on http://localhost:5000   (API)
+
+Open your browser and go to:
+
+  http://localhost:5173
+
+
+================================================================================
+PART 3 — TEST THAT EVERYTHING WORKS
+================================================================================
+
+  1. Homepage loads at http://localhost:5173
+  2. Click "Find a Therapist" — you should see 6 sample therapists
+  3. Log in as admin:
+       Email:    admin@therapistdirectory.com
+       Password: Admin123!
+  4. Click Dashboard — you should see the Admin Panel
+
+To stop the app: click the Terminal window running npm run dev and press Ctrl + C.
+
+
+================================================================================
+TEST ACCOUNTS (created by npm run seed)
+================================================================================
+
+  Role        Email                              Password
+  ----------  ---------------------------------  ------------
+  Admin       admin@therapistdirectory.com       Admin123!
+  Client      client@example.com                 Client123!
+  Therapist   sarah.johnson@example.com          Therapist123!
+              (any *@example.com from seed)
+
+  Therapist registration: use "Join as Therapist" on the site.
+  New therapists need admin approval before appearing in search.
+
+
+================================================================================
+EVERY TIME YOU WORK ON THE PROJECT LATER
+================================================================================
+
+  1. Open Terminal
+  2. Make sure MongoDB is running:
+       brew services start mongodb-community@7.0
+  3. Go to project folder:
+       cd ~/Documents/therapist-project
+  4. Start the app:
+       npm run dev
+  5. Open browser: http://localhost:5173
+  6. Stop when done: Ctrl + C in Terminal
+
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+"command not found: brew"
+  → Complete Step 2 and run the echo/eval lines, then close and reopen Terminal
+
+"command not found: node" or "npm"
+  → Run: brew install node
+
+"MongoDB connection error" or seed fails
+  → Start MongoDB:
+      brew services start mongodb-community@7.0
+  → Wait 10 seconds, then run npm run seed again
+
+"Port 5000 already in use" or "Port 5173 already in use"
+  → Something else is using the port. Find and stop it:
+      lsof -i :5000
+      lsof -i :5173
+      kill -9 <PID shown in the second column>
+
+npm install errors
+  → From project folder:
+      rm -rf node_modules client/node_modules server/node_modules shared/node_modules
+      npm install
+
+Blank or broken page in browser
+  → Use Chrome or Firefox
+  → Hard refresh: Cmd + Shift + R
+  → Make sure npm run dev is still running in Terminal
+
+"Permission denied" when running brew
+  → Don't use sudo with brew. Fix Homebrew permissions:
+      sudo chown -R $(whoami) /opt/homebrew
+
+
+================================================================================
+SETUP CHECKLIST
+================================================================================
+
+  [ ] Terminal opens and works
+  [ ] Homebrew installed (brew --version works)
+  [ ] Node.js installed (node -v shows v18+)
+  [ ] MongoDB installed and started
+  [ ] ZIP unzipped to ~/Documents/therapist-project (or similar)
+  [ ] cd into project folder works
+  [ ] npm install completed without errors
+  [ ] server/.env file exists (copied from .env.example)
+  [ ] npm run seed completed successfully
+  [ ] npm run dev running
+  [ ] http://localhost:5173 opens in browser
+
+
+================================================================================
+OPTIONAL: Install VS Code (editor)
+================================================================================
+
+  brew install --cask visual-studio-code
+
+Open the project: File → Open Folder → select therapist-project
+
+
+================================================================================
+PROJECT FOLDER STRUCTURE (do not delete these)
+================================================================================
+
+  therapist-project/
+  ├── client/           Website (React)
+  ├── server/           API (Node.js)
+  ├── shared/           Shared code
+  ├── package.json      Main config
+  ├── SETUP_MAC.txt     This guide
+  └── README.md         Extra documentation
+
+
+================================================================================
+NOTES FOR THE PERSON WHO SENT YOU THIS ZIP
+================================================================================
+
+  • No GitHub or internet repo is required — everything is in the ZIP.
+  • After unzipping, do NOT delete node_modules if present; if missing,
+    npm install will create it.
+  • MongoDB must be running whenever you use the app.
+  • If you add new therapists via the site, an admin must approve them
+    before they appear in the directory search.
+
+================================================================================
