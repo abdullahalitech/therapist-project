@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Layout } from "../components/Layout";
 import { SEO } from "../components/SEO";
 import { useAuth } from "../context/AuthContext";
+import { requestNotificationPermission } from "../lib/notifications";
 
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerClientSchema>;
@@ -26,6 +27,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     setError("");
+    void requestNotificationPermission();
     try {
       await login(data.email, data.password);
       navigate(from);

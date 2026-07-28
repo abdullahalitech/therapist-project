@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatSocketProvider } from "./context/ChatSocketContext";
+import { NotificationPermissionBanner } from "./components/NotificationPermissionBanner";
 import { NotificationToasts } from "./components/NotificationToasts";
 import LandingPage from "./pages/LandingPage";
 import AboutPage from "./pages/AboutPage";
@@ -50,6 +51,7 @@ export default function App() {
               <Route path="/terms" element={<TermsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <NotificationPermissionBanner />
             <NotificationToasts />
           </BrowserRouter>
         </ChatSocketProvider>

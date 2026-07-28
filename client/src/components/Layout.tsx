@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
+import { getNotificationPermission, requestNotificationPermission } from "../lib/notifications";
 import { cn } from "../lib/utils";
 
 const navLinks = [
@@ -75,7 +76,15 @@ export function Header() {
           {user ? (
             <>
               {canUseChat && (
-                <Link to={messagesLink} className="relative btn-secondary gap-2 py-2">
+                <Link
+                  to={messagesLink}
+                  className="relative btn-secondary gap-2 py-2"
+                  onClick={() => {
+                    if (getNotificationPermission() === "default") {
+                      void requestNotificationPermission();
+                    }
+                  }}
+                >
                   <MessageCircle className="h-4 w-4" />
                   Messages
                   {unreadMessages > 0 && (

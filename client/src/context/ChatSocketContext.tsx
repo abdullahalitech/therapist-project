@@ -13,7 +13,7 @@ import type { ChatMessageEvent, ChatNotificationEvent } from "@therapist/shared"
 import { useAuth } from "./AuthContext";
 import { getAccessToken } from "../lib/api";
 import { appendMessageToCache } from "../lib/chatCache";
-import { requestNotificationPermission, showBrowserNotification } from "../lib/notifications";
+import { isTabInBackground, showBrowserNotification } from "../lib/notifications";
 
 export interface ChatToast {
   id: string;
@@ -73,8 +73,6 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    void requestNotificationPermission();
-
     const token = getAccessToken();
     if (!token) return;
 
@@ -98,16 +96,20 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
       const isViewing = activeConversationIdRef.current === event.conversationId;
       if (!isViewing) {
-        addToast(event);
-        showBrowserNotification({
-          title: `Message from ${event.senderName}`,
-          body: event.preview,
-          onClick: () => {
-            const path =
-              user.role === "client" ? "/dashboard?tab=messages" : "/therapist/dashboard?tab=messages";
-            window.location.href = path;
-          },
-        });
+        if (isTabInBackground()) {
+          showBrowserNotification({
+            title: `Message from ${event.senderName}`,
+            body: event.preview,
+            tag: `chat-${event.conversationId}`,
+            onClick: () => {
+              const path =
+                user.role === "client" ? "/dashboard?tab=messages" : "/therapist/dashboard?tab=messages";
+              window.location.href = path;
+            },
+          });
+        } else {
+          addToast(event);
+        }
       } else {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }
