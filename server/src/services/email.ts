@@ -111,3 +111,18 @@ export function bookingCompletedEmail(params: {
     <p><a href="${params.reviewUrl}">Leave a Review</a></p>
   `;
 }
+
+export function newMessageEmail(params: {
+  recipientName: string;
+  senderName: string;
+  preview: string;
+  messagesUrl: string;
+}): string {
+  return `
+    <h2>New Message</h2>
+    <p>Hi ${params.recipientName},</p>
+    <p><strong>${params.senderName}</strong> sent you a message:</p>
+    <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555;">${params.preview}</blockquote>
+    <p><a href="${params.messagesUrl}">Open Messages</a></p>
+  `;
+}

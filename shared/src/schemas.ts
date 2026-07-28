@@ -89,6 +89,20 @@ export const faqSchema = z.object({
   isPublished: z.boolean().optional(),
 });
 
+export const sendMessageSchema = z.object({
+  body: z.string().min(1).max(2000),
+});
+
+export const createConversationSchema = z.object({
+  therapistId: z.string().min(1).optional(),
+  clientId: z.string().min(1).optional(),
+});
+
+export const messagesQuerySchema = z.object({
+  before: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export const therapistListQuerySchema = z.object({
   q: z.string().optional(),
   city: z.string().optional(),

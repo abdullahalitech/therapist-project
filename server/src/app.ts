@@ -12,6 +12,7 @@ import reviewsRoutes from "./routes/reviews.routes";
 import therapistRoutes from "./routes/therapist.routes";
 import adminRoutes from "./routes/admin.routes";
 import contentRoutes from "./routes/content.routes";
+import conversationsRoutes from "./routes/conversations.routes";
 import { handleMulterError } from "./middleware/upload";
 
 const app = express();
@@ -43,9 +44,22 @@ app.use("/api/v1/bookings", bookingsRoutes);
 app.use("/api/v1/reviews", reviewsRoutes);
 app.use("/api/v1/therapist", therapistRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/conversations", conversationsRoutes);
 app.use("/api/v1", contentRoutes);
 
 app.use(handleMulterError);
+
+if (config.nodeEnv === "production") {
+  const clientDist = path.join(process.cwd(), "..", "client", "dist");
+  app.use(express.static(clientDist));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      next();
+      return;
+    }
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });

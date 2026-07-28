@@ -167,6 +167,7 @@ export const api = {
     request<
       Array<{
         id: string;
+        clientId: string;
         clientName: string;
         clientEmail: string;
         preferredDate: string;
@@ -270,6 +271,40 @@ export const api = {
 
   adminMarkContactRead: (id: string) =>
     request<{ message: string }>(`/admin/contact-messages/${id}/read`, { method: "PATCH" }),
+
+  getConversations: () =>
+    request<import("@therapist/shared").ConversationPublic[]>("/conversations"),
+
+  getEligibleContacts: () =>
+    request<
+      Array<{ therapistId: string; name: string } | { clientId: string; name: string }>
+    >("/conversations/eligible"),
+
+  createConversation: (body: { therapistId?: string; clientId?: string }) =>
+    request<import("@therapist/shared").ConversationPublic>("/conversations", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  getMessages: (conversationId: string, before?: string) => {
+    const params = new URLSearchParams();
+    if (before) params.set("before", before);
+    const query = params.toString();
+    return request<import("@therapist/shared").MessagePublic[]>(
+      `/conversations/${conversationId}/messages${query ? `?${query}` : ""}`
+    );
+  },
+
+  sendMessage: (conversationId: string, body: string) =>
+    request<import("@therapist/shared").MessagePublic>(
+      `/conversations/${conversationId}/messages`,
+      { method: "POST", body: JSON.stringify({ body }) }
+    ),
+
+  markConversationRead: (conversationId: string) =>
+    request<{ message: string; count: number }>(`/conversations/${conversationId}/read`, {
+      method: "PATCH",
+    }),
 };
 
 export { ApiError };

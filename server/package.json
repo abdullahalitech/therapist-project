@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "npm run build --workspace=@therapist/shared && tsc",
     "start": "node dist/index.js",
     "seed": "tsx src/scripts/seed.ts"
   },
@@ -22,6 +22,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16",
     "slugify": "^1.6.6",
+    "socket.io": "^4.8.3",
     "zod": "^3.24.2"
   },
   "devDependencies": {

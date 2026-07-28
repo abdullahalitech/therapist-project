@@ -91,3 +91,37 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface MessagePublic {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  isOwn: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface ConversationPublic {
+  id: string;
+  clientId: string;
+  therapistId: string;
+  otherPartyName: string;
+  lastMessagePreview?: string;
+  lastMessageAt?: string;
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface ChatMessageEvent {
+  conversationId: string;
+  message: MessagePublic;
+}
+
+export interface ChatNotificationEvent {
+  conversationId: string;
+  message: MessagePublic;
+  senderName: string;
+  preview: string;
+}

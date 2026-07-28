@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Layout } from "../components/Layout";
 import { SEO } from "../components/SEO";
 import { ProtectedRoute } from "../components/ProtectedRoute";
+import { MessagesPanel } from "../components/MessagesPanel";
 import { api } from "../lib/api";
 import { formatDate } from "../lib/utils";
 import {
-  User, Upload, Clock, CheckCircle, XCircle, CalendarCheck, Calendar,
+  User, Upload, Clock, CheckCircle, XCircle, CalendarCheck, Calendar, Mail,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -20,6 +22,7 @@ const statusColors: Record<string, string> = {
 
 interface TherapistBooking {
   id: string;
+  clientId: string;
   clientName: string;
   clientEmail: string;
   preferredDate: string;
@@ -32,7 +35,9 @@ interface TherapistBooking {
 
 function TherapistDashboard() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"bookings" | "profile">("bookings");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"bookings" | "messages" | "profile">("bookings");
+  const [messageClientId, setMessageClientId] = useState<string | undefined>();
   const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "confirmed" | "completed">("all");
   const [notesByBooking, setNotesByBooking] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
@@ -47,6 +52,13 @@ function TherapistDashboard() {
     queryKey: ["therapist-bookings"],
     queryFn: api.getTherapistBookings,
   });
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: api.getConversations,
+  });
+
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
@@ -113,6 +125,14 @@ function TherapistDashboard() {
       });
     }
   }, [profile, reset]);
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "messages") {
+      setActiveTab("messages");
+      searchParams.delete("tab");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const isPlaceholderProfile = profile?.bio.includes("pending completion");
 
@@ -183,20 +203,31 @@ function TherapistDashboard() {
           )}
 
           <div className="mt-6 flex gap-2 border-b">
-            {(["bookings", "profile"] as const).map((tab) => (
+            {(["bookings", "messages", "profile"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize ${
+                className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium capitalize ${
                   activeTab === tab
                     ? "border-primary-600 text-primary-700"
                     : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
                 {tab}
+                {tab === "messages" && totalUnread > 0 && (
+                  <span className="rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                    {totalUnread}
+                  </span>
+                )}
               </button>
             ))}
           </div>
+
+          {activeTab === "messages" && (
+            <div className="mt-8">
+              <MessagesPanel role="therapist" initialClientId={messageClientId} />
+            </div>
+          )}
 
           {activeTab === "bookings" && (
             <div className="mt-8">
@@ -243,6 +274,10 @@ function TherapistDashboard() {
                         setNotesByBooking((prev) => ({ ...prev, [b.id]: note }))
                       }
                       onAction={handleBookingAction}
+                      onMessage={() => {
+                        setMessageClientId(b.clientId);
+                        setActiveTab("messages");
+                      }}
                     />
                   ))}
                 </div>
@@ -347,12 +382,16 @@ function BookingCard({
   note,
   onNoteChange,
   onAction,
+  onMessage,
 }: {
   booking: TherapistBooking;
   note: string;
   onNoteChange: (note: string) => void;
   onAction: (id: string, status: "confirmed" | "declined" | "completed") => void;
+  onMessage: () => void;
 }) {
+  const canMessage = booking.status === "confirmed" || booking.status === "completed";
+
   return (
     <div className="card">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -374,11 +413,19 @@ function BookingCard({
             </p>
           )}
         </div>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusColors[booking.status]}`}
-        >
-          {booking.status}
-        </span>
+        <div className="flex items-center gap-2">
+          {canMessage && (
+            <button onClick={onMessage} className="btn-secondary gap-1 py-1.5 text-xs">
+              <Mail className="h-3.5 w-3.5" />
+              Message
+            </button>
+          )}
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusColors[booking.status]}`}
+          >
+            {booking.status}
+          </span>
+        </div>
       </div>
 
       {(booking.status === "pending" || booking.status === "confirmed") && (

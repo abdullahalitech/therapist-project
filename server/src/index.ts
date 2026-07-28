@@ -1,21 +1,28 @@
+import http from "http";
 import app from "./app";
 import { config } from "./config";
 import { connectDB } from "./config/db";
+import { initSocket } from "./socket";
+import { setChatIo } from "./services/chatRealtime";
 
-let server: ReturnType<typeof app.listen> | null = null;
+let httpServer: http.Server | null = null;
 
 async function start() {
   await connectDB();
 
-  if (server) {
-    server.close();
+  if (httpServer) {
+    httpServer.close();
   }
 
-  server = app.listen(config.port, () => {
+  httpServer = http.createServer(app);
+  const io = initSocket(httpServer);
+  setChatIo(io);
+
+  httpServer.listen(config.port, () => {
     console.log(`Server running on http://localhost:${config.port}`);
   });
 
-  server.on("error", (err: NodeJS.ErrnoException) => {
+  httpServer.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
       console.error(`Port ${config.port} is already in use`);
     } else {

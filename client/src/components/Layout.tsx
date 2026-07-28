@@ -1,7 +1,9 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, Heart, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, Heart, LogOut, LayoutDashboard, MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 
 const navLinks = [
@@ -29,6 +31,20 @@ export function Header() {
         : user?.role === "client"
           ? "/dashboard"
           : null;
+
+  const canUseChat = user?.role === "client" || user?.role === "therapist";
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: api.getConversations,
+    enabled: canUseChat,
+  });
+
+  const unreadMessages = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+  const messagesLink =
+    user?.role === "therapist"
+      ? "/therapist/dashboard?tab=messages"
+      : "/dashboard?tab=messages";
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur">
@@ -58,6 +74,17 @@ export function Header() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
+              {canUseChat && (
+                <Link to={messagesLink} className="relative btn-secondary gap-2 py-2">
+                  <MessageCircle className="h-4 w-4" />
+                  Messages
+                  {unreadMessages > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+              )}
               {dashboardLink && (
                 <Link to={dashboardLink} className="btn-secondary gap-2 py-2">
                   <LayoutDashboard className="h-4 w-4" />

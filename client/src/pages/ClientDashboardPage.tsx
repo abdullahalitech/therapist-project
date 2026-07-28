@@ -5,10 +5,11 @@ import { Layout } from "../components/Layout";
 import { SEO } from "../components/SEO";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { ReviewPromptModal } from "../components/ReviewPromptModal";
+import { MessagesPanel } from "../components/MessagesPanel";
 import { api } from "../lib/api";
 import { formatDate } from "../lib/utils";
 import type { BookingPublic } from "@therapist/shared";
-import { Calendar, Star, MessageSquare } from "lucide-react";
+import { Calendar, Star, MessageSquare, Mail } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800",
@@ -21,6 +22,8 @@ const statusColors: Record<string, string> = {
 function ClientDashboard() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"bookings" | "messages">("bookings");
+  const [messageTherapistId, setMessageTherapistId] = useState<string | undefined>();
   const [reviewBooking, setReviewBooking] = useState<BookingPublic | null>(null);
   const [reviewError, setReviewError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,6 +32,13 @@ function ClientDashboard() {
     queryKey: ["my-bookings"],
     queryFn: api.getMyBookings,
   });
+
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: api.getConversations,
+  });
+
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
   const pendingReviews = bookings.filter((b) => b.needsReview);
 
@@ -41,6 +51,20 @@ function ClientDashboard() {
         searchParams.delete("review");
         setSearchParams(searchParams, { replace: true });
       }
+    }
+
+    const messageId = searchParams.get("message");
+    if (messageId) {
+      setActiveTab("messages");
+      setMessageTherapistId(messageId);
+      searchParams.delete("message");
+      setSearchParams(searchParams, { replace: true });
+    }
+
+    if (searchParams.get("tab") === "messages") {
+      setActiveTab("messages");
+      searchParams.delete("tab");
+      setSearchParams(searchParams, { replace: true });
     }
   }, [bookings, searchParams, setSearchParams]);
 
@@ -90,9 +114,38 @@ function ClientDashboard() {
 
       <section className="py-12">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <h1 className="text-2xl font-bold">My Bookings</h1>
-          <p className="mt-2 text-slate-600">Track appointments and share feedback after sessions</p>
+          <h1 className="text-2xl font-bold">My Dashboard</h1>
+          <p className="mt-2 text-slate-600">Track appointments and message your therapists</p>
 
+          <div className="mt-6 flex gap-2 border-b">
+            {(["bookings", "messages"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium capitalize ${
+                  activeTab === tab
+                    ? "border-primary-600 text-primary-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab}
+                {tab === "messages" && totalUnread > 0 && (
+                  <span className="rounded-full bg-primary-600 px-2 py-0.5 text-xs font-medium text-white">
+                    {totalUnread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "messages" && (
+            <div className="mt-8">
+              <MessagesPanel role="client" initialTherapistId={messageTherapistId} />
+            </div>
+          )}
+
+          {activeTab === "bookings" && (
+            <>
           {pendingReviews.length > 0 && !reviewBooking && (
             <div className="mt-6 flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <MessageSquare className="h-6 w-6 shrink-0 text-amber-600" />
@@ -146,12 +199,18 @@ function ClientDashboard() {
                           key={b.id}
                           booking={b}
                           onReview={() => setReviewBooking(b)}
+                          onMessage={() => {
+                            setMessageTherapistId(b.therapistId);
+                            setActiveTab("messages");
+                          }}
                         />
                       ))}
                     </div>
                   </div>
                 ))}
             </div>
+          )}
+            </>
           )}
         </div>
       </section>
@@ -162,10 +221,14 @@ function ClientDashboard() {
 function BookingCard({
   booking,
   onReview,
+  onMessage,
 }: {
   booking: BookingPublic;
   onReview: () => void;
+  onMessage: () => void;
 }) {
+  const canMessage = booking.status === "confirmed" || booking.status === "completed";
+
   return (
     <div className="card">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -194,6 +257,12 @@ function BookingCard({
           >
             {booking.status}
           </span>
+          {canMessage && (
+            <button onClick={onMessage} className="btn-secondary gap-1 py-1.5 text-xs">
+              <Mail className="h-3.5 w-3.5" />
+              Message
+            </button>
+          )}
           {booking.needsReview && (
             <button onClick={onReview} className="btn-primary gap-1 py-1.5 text-xs">
               <Star className="h-3.5 w-3.5" />
